@@ -1,6 +1,6 @@
 """Módulo de notificações"""
 
-from typing import Any
+from rich.console import Console
 
 
 class Notifier:
@@ -8,8 +8,13 @@ class Notifier:
 
     def __init__(self) -> None:
         """Inicializa o notificador"""
-        pass
+        self.console = Console()
 
-    def send(self, message: str) -> None:
+    def send(self, message: str, level: str = 'info') -> None:
         """Envia uma notificação"""
-        pass
+        if level == 'success':
+            self.console.print(f'[bold green][SUCESSO][/bold green] {message}')
+        elif level == 'error':
+            self.console.print(f'[bold red][ERRO][/bold red] {message}')
+        else:
+            self.console.print(f'[bold blue][INFO][/bold blue] {message}')

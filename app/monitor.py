@@ -6,6 +6,7 @@ from typing import Optional
 import requests
 
 from app.config import load_config
+from app.notifier import Notifier
 
 
 class Monitor:
@@ -18,13 +19,18 @@ class Monitor:
         config = load_config()
         self.host: str = host or config.get('TARGET_HOST', 'google.com')
         self.timeout: int = timeout or int(config.get('TIMEOUT', 5))
+        self.notifier = Notifier()
 
     def run(self) -> None:
         """Executa o monitoramento"""
         if self.check_host(self.host, self.timeout):
-            print(f'[OK] Conexão com {self.host} bem-sucedida')
+            self.notifier.send(
+                f'Conexão com {self.host} bem-sucedida', level='success'
+            )
         else:
-            print(f'[FAIL] Não foi possível conectar a {self.host}')
+            self.notifier.send(
+                f'Não foi possível conectar a {self.host}', level='error'
+            )
 
     def check_host(self, host: str, timeout: int) -> bool:
         """Verifica conectividade com um host"""
