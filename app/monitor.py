@@ -1,44 +1,48 @@
-"""Módulo de monitoramento de rede"""
+"""Módulo de monitoramento"""
 
 import socket
-from typing import Optional
+import time
+from typing import List
 
-import requests
-
-from app.config import load_config
 from app.notifier import Notifier
 
 
 class Monitor:
-    """Classe de monitoramento"""
+    """Classe de monitoramento de hosts"""
 
     def __init__(
-        self, host: Optional[str] = None, timeout: Optional[int] = None
+        self, hosts: List[str], notifier: Notifier, interval: int = 5
     ) -> None:
         """Inicializa o monitor"""
-        config = load_config()
-        self.host: str = host or config.get('TARGET_HOST', 'google.com')
-        self.timeout: int = timeout or int(config.get('TIMEOUT', 5))
-        self.notifier = Notifier()
+        self.hosts = hosts
+        self.notifier = notifier
+        self.interval = interval
 
-    def run(self) -> None:
-        """Executa o monitoramento"""
-        if self.check_host(self.host, self.timeout):
-            self.notifier.send(
-                f'Conexão com {self.host} bem-sucedida', level='success'
-            )
-        else:
-            self.notifier.send(
-                f'Não foi possível conectar a {self.host}', level='error'
-            )
-
-    def check_host(self, host: str, timeout: int) -> bool:
-        """Verifica conectividade com um host"""
+    def check_host(self, host: str) -> bool:
+        """Verifica se o host está acessível"""
         try:
-            socket.setdefaulttimeout(timeout)
             socket.gethostbyname(host)
-
-            response = requests.get(f'http://{host}', timeout=timeout)
-            return response.status_code == 200
-        except Exception:
+            return True
+        except socket.error:
             return False
+
+    def run_once(self) -> None:
+        """Executa uma verificação única"""
+        for host in self.hosts:
+            if self.check_host(host):
+                self.notifier.send(
+                    f'Conexão com {host} bem-sucedida', level='success'
+                )
+            else:
+                self.notifier.send(
+                    f'Falha ao conectar com {host}', level='error'
+                )
+
+    def run_forever(self) -> None:
+        """Executa verificações contínuas"""
+        self.notifier.send(
+            f'Iniciando monitoramento a cada {self.interval}s...', level='info'
+        )
+        while True:
+            self.run_once()
+            time.sleep(self.interval)
